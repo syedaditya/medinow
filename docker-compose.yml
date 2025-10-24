@@ -1,11 +1,14 @@
+version: '3.9'
+
 services:
   frontend:
     build: ./frontend
     ports:
       - "3001:80"
     depends_on:
-      - backend
-    restart: always
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
 
   backend:
     build: ./backend
@@ -15,8 +18,14 @@ services:
       - MONGO_URI=mongodb://mongo:27017/medinow
       - PORT=5000
     depends_on:
-      - mongo
-    restart: always
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
 
   mongo:
     image: mongo:6
@@ -24,7 +33,12 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
-    restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
 volumes:
   mongo-data:

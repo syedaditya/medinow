@@ -1,30 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const Reminder = require("../models/Reminder");
-const verifyFirebaseToken = require("../middleware/authmiddleware");
+const { protect } = require("../middleware/authMiddleware");
+const { createReminder, getReminders, deleteReminder } = require("../controllers/reminderController");
 
-// Add a reminder (protected)
-router.post("/", verifyFirebaseToken, async (req, res) => {
-  try {
-    const reminder = new Reminder({
-      ...req.body,
-      userId: req.user.uid, // pulled from Firebase token
-    });
-    await reminder.save();
-    res.json({ message: "Reminder added", reminder });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// POST - create a new reminder (requires auth)
+router.post("/", protect, createReminder);
 
-// Get reminders for user (protected)
-router.get("/", verifyFirebaseToken, async (req, res) => {
-  try {
-    const reminders = await Reminder.find({ userId: req.user.uid });
-    res.json(reminders);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// GET - fetch all reminders (requires auth)
+router.get("/", protect, getReminders);
+
+// DELETE - remove a reminder (requires auth)
+router.delete("/:id", protect, deleteReminder);
 
 module.exports = router;

@@ -1,7 +1,27 @@
+# Use official Node.js image
 FROM node:20-alpine
+
+# Set working directory
 WORKDIR /app
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy package.json and package-lock.json first (for caching)
 COPY package*.json ./
+
+# Install only production dependencies
 RUN npm install --production
+
+# Copy the rest of the backend source code
 COPY . .
+
+# Expose backend port
 EXPOSE 5000
-CMD ["node", "index.js"]
+
+# Healthcheck for Docker
+HEALTHCHECK --interval=10s --timeout=3s --retries=10 \
+  CMD curl -f http://localhost:5000/health || exit 1
+
+# Start the backend
+CMD ["npm", "start"]
